@@ -4,7 +4,6 @@ Ext.define("custom-grid-with-deep-export", {
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
     items: [
-        {xtype:'container',itemId:'message_box',tpl:'Hello, <tpl>{_refObjectName}</tpl>'},
         {xtype:'container',itemId:'display_box'}
     ],
 
@@ -14,7 +13,8 @@ Ext.define("custom-grid-with-deep-export", {
             query: '',
             showControls: true,
             type: 'HierarchicalRequirement',
-            pageSize: 50
+            pageSize: 50,
+            searchAllProjects: [{checked: false}],
         }
     },
 
@@ -52,12 +52,17 @@ Ext.define("custom-grid-with-deep-export", {
         this.modelNames = [this.getSetting('type')];
         this.logger.log('_buildStore', this.modelNames);
         var fetch = ['FormattedID', 'Name'];
+        var dataContext = this.getContext().getDataContext();
+        if (this.searchAllProjects()) {
+            dataContext.project = null;
+        }
 
         Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
             models: this.modelNames,
             enableHierarchy: true,
             remoteSort: true,
-            fetch: fetch
+            fetch: fetch,
+            context: dataContext
         }).then({
             success: this._addGridboard,
             scope: this
@@ -76,10 +81,14 @@ Ext.define("custom-grid-with-deep-export", {
         }
         this.logger.log('_addGridboard', store);
 
-
+        var context = this.getContext();
+        var dataContext = context.getDataContext();
+        if (this.searchAllProjects()) {
+            dataContext.project = null;
+        }
         this.gridboard = this.down('#display_box').add({
                 xtype: 'rallygridboard',
-                context: this.getContext(),
+                context: context,
                 modelNames: this.modelNames,
                 toggleState: 'grid',
                 plugins: [
@@ -127,7 +136,8 @@ Ext.define("custom-grid-with-deep-export", {
                 gridConfig: {
                     store: store,
                     storeConfig: {
-                        filters: filters
+                        filters: filters,
+                        context: dataContext
                     },
                     columnCfgs: [
                         'Name'
@@ -144,12 +154,17 @@ Ext.define("custom-grid-with-deep-export", {
                 text: 'Export User Stories...',
                 handler: this._export,
                 scope: this,
-                childModels: []
+                childModels: ['hierarchicalrequirement']
             },{
                 text: 'Export User Stories and Tasks...',
                 handler: this._export,
                 scope: this,
-                childModels: ['task']
+                childModels: ['hierarchicalrequirement','task']
+            },{
+                text: 'Export User Stories and Child Items...',
+                handler: this._export,
+                scope: this,
+                childModels: ['hierarchicalrequirement','task','defect','testcase']
             }];
         }
 
@@ -179,6 +194,11 @@ Ext.define("custom-grid-with-deep-export", {
             handler: this._export,
             scope: this,
             childModels: childModels.concat(['hierarchicalrequirement','task'])
+        },{
+            text: 'Export Portfolio Items and Child Items...',
+            handler: this._export,
+            scope: this,
+            childModels: childModels.concat(['hierarchicalrequirement','defect','testcase'])
         }];
     },
     getPortfolioItemTypeNames: function(){
@@ -257,6 +277,10 @@ Ext.define("custom-grid-with-deep-export", {
         exporter.on('exporterror', this._showError, this);
         exporter.on('exportcomplete', this._showStatus, this);
 
+        var dataContext = this.getContext().getDataContext();
+        if (this.searchAllProjects()) {
+            dataContext.project = null;
+        }
         var hierarchyLoader = Ext.create('Rally.technicalservices.HierarchyLoader',{
             model: modelName,
             fetch: fetch,
@@ -264,7 +288,7 @@ Ext.define("custom-grid-with-deep-export", {
             sorters: sorters,
             loadChildModels: childModels,
             portfolioItemTypes: this.portfolioItemTypes,
-            context: this.getContext().getDataContext()
+            context: dataContext
         });
         hierarchyLoader.on('statusupdate', this._showStatus, this);
         hierarchyLoader.on('hierarchyloadartifactsloaded', exporter.setRecords, exporter);
@@ -306,8 +330,26 @@ Ext.define("custom-grid-with-deep-export", {
     isExternal: function(){
         return typeof(this.getAppId()) == 'undefined';
     },
+    
+    isMilestoneScoped: function() {
+        var result = false;
+        
+        var tbscope = this.getContext().getTimeboxScope();
+        if (tbscope && tbscope.getType() == 'milestone') {
+            result = true;
+        }
+        return result
+    },
+    
+    searchAllProjects: function() {
+        var searchAllProjects = this.getSetting('searchAllProjects');
+        return this.isMilestoneScoped() && searchAllProjects;
+    },
+    
     getSettingsFields: function(){
-        return Rally.technicalservices.CustomGridWithDeepExportSettings.getFields();
+        return Rally.technicalservices.CustomGridWithDeepExportSettings.getFields({
+            showSearchAllProjects: this.isMilestoneScoped()
+        });
     },
     //onSettingsUpdate:  Override
     onSettingsUpdate: function (settings){
