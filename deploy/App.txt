@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid with Deep Export</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Aug 15 2018 12:11:02 GMT-0600 (MDT) -->
+    <!--  Build Date: Fri Jul 05 2019 10:58:27 GMT-0500 (Colombia Standard Time) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Aug 15 2018 12:11:02 GMT-0600 (MDT)";
-        var CHECKSUM = 35081721478;
+        var APP_BUILD_DATE = "Fri Jul 05 2019 10:58:27 GMT-0500 (Colombia Standard Time)";
+        var CHECKSUM = 35432214748;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -883,6 +883,8 @@ Ext.define("custom-grid-with-deep-export", {
     },
 
     launch: function () {
+        Rally.data.wsapi.Proxy.superclass.timeout = 240000;
+        Rally.data.wsapi.batch.Proxy.superclass.timeout = 240000;
         this.fetchPortfolioItemTypes().then({
             success: function(portfolioItemTypes){
                 this.portfolioItemTypes = portfolioItemTypes;

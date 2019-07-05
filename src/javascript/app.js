@@ -35,6 +35,8 @@ Ext.define("custom-grid-with-deep-export", {
     },
 
     launch: function () {
+        Rally.data.wsapi.Proxy.superclass.timeout = 240000;
+        Rally.data.wsapi.batch.Proxy.superclass.timeout = 240000;
         this.fetchPortfolioItemTypes().then({
             success: function(portfolioItemTypes){
                 this.portfolioItemTypes = portfolioItemTypes;
