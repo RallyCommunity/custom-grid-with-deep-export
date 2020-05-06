@@ -5,6 +5,9 @@
 ### Caveats
 If an item has a parent that is out of scope, then that item's relationship will not be seen.
 
+This app was designed to be functional for the user who compiles the code and posts it in their Rally Custom HTML app.
+It was not designed to be fully compatible with Shared pages in Rally.
+
 ## Development Notes
 
 ### First Load
